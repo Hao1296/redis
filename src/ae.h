@@ -30,6 +30,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* Redis基于NIO实现的异步通信库，
+ * 事件循环入口为aeMain
+ */
+
 #ifndef __AE_H__
 #define __AE_H__
 

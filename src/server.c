@@ -2030,16 +2030,16 @@ void resetServerStats(void) {
 
 void initServer(void) {
     int j;
-
+	// 设置进程信号处理器
     signal(SIGHUP, SIG_IGN);
     signal(SIGPIPE, SIG_IGN);
     setupSignalHandlers();
-
+	// 判断是否开启日志
     if (server.syslog_enabled) {
         openlog(server.syslog_ident, LOG_PID | LOG_NDELAY | LOG_NOWAIT,
             server.syslog_facility);
     }
-
+	// 初始化server属性
     server.hz = server.config_hz;
     server.pid = getpid();
     server.current_client = NULL;
@@ -2057,7 +2057,7 @@ void initServer(void) {
     server.get_ack_from_slaves = 0;
     server.clients_paused = 0;
     server.system_memory_size = zmalloc_get_memory_size();
-
+	// 创建共享对象(如字符串"OK",1到10000整数字符串等等)
     createSharedObjects();
     adjustOpenFilesLimit();
     server.el = aeCreateEventLoop(server.maxclients+CONFIG_FDSET_INCR);
@@ -4048,7 +4048,7 @@ int redisIsSupervised(int mode) {
     return 0;
 }
 
-
+// Redis Server启动入口
 int main(int argc, char **argv) {
     struct timeval tv;
     int j;
@@ -4093,6 +4093,8 @@ int main(int argc, char **argv) {
     getRandomHexChars(hashseed,sizeof(hashseed));
     dictSetHashFunctionSeed((uint8_t*)hashseed);
     server.sentinel_mode = checkForSentinelMode(argc,argv);
+	/*
+	 * 根据配置初始化redisServer */
     initServerConfig();
     moduleInitModulesSystem();
 
@@ -4203,7 +4205,7 @@ int main(int argc, char **argv) {
     server.supervised = redisIsSupervised(server.supervised_mode);
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
-
+	// 初始化server的属性，开启端口socket事件监听
     initServer();
     if (background || server.pidfile) createPidFile();
     redisSetProcTitle(argv[0]);
@@ -4243,6 +4245,7 @@ int main(int argc, char **argv) {
 
     aeSetBeforeSleepProc(server.el,beforeSleep);
     aeSetAfterSleepProc(server.el,afterSleep);
+	// 开启事件循环
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
     return 0;
