@@ -100,10 +100,20 @@ typedef struct aeFiredEvent {
 /* State of an event based program */
 typedef struct aeEventLoop {
     int maxfd;   /* highest file descriptor currently registered */
+	/* 使用epoll时:
+	 * 会作为epoll_wait的maxevents参数
+	 */
     int setsize; /* max number of file descriptors tracked */
     long long timeEventNextId;
     time_t lastTime;     /* Used to detect system clock skew */
+	/* 
+	 * events[fd]指明了对应fd上所关注的所有事件及处理函数。
+	 * 监听端口上的AE_READABLE事件(即accept)是在initServer中设置的(见server.c)，
+	 * 对应处理函数为acceptTcpHandler。
+	 * 在acceptTcpHandler中会将accept出的socket上的AE_READABLE加入关注列表，
+	 * 对应处理函数为readQueryFromClient(见networking.c)。*/
     aeFileEvent *events; /* Registered events */
+	// 哪个fd发生了什么事件(AE_READABLE|AE_READABLE|AE_BARRIER)
     aeFiredEvent *fired; /* Fired events */
     aeTimeEvent *timeEventHead;
     int stop;

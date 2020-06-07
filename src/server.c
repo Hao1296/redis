@@ -2150,6 +2150,8 @@ void initServer(void) {
     /* Create an event handler for accepting new connections in TCP and Unix
      * domain sockets. */
     for (j = 0; j < server.ipfd_count; j++) {
+		// 在给定aeEventLoop内添加给定fd上的给定关注事件(设置到events[fd])，并设置处理函数
+		// 这里设置的fd是正在listen的socket
         if (aeCreateFileEvent(server.el, server.ipfd[j], AE_READABLE,
             acceptTcpHandler,NULL) == AE_ERR)
             {
@@ -4205,7 +4207,7 @@ int main(int argc, char **argv) {
     server.supervised = redisIsSupervised(server.supervised_mode);
     int background = server.daemonize && !server.supervised;
     if (background) daemonize();
-	// 初始化server的属性，开启端口socket事件监听
+	// 初始化server的属性，开启端口socket监听，并注册关注的事件
     initServer();
     if (background || server.pidfile) createPidFile();
     redisSetProcTitle(argv[0]);
@@ -4245,7 +4247,7 @@ int main(int argc, char **argv) {
 
     aeSetBeforeSleepProc(server.el,beforeSleep);
     aeSetAfterSleepProc(server.el,afterSleep);
-	// 开启事件循环
+	// 开启事件循环，每次迭代调用aeProcessEvents处理网络事件
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
     return 0;

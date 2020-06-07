@@ -133,6 +133,7 @@ void aeStop(aeEventLoop *eventLoop) {
     eventLoop->stop = 1;
 }
 
+// 在给定aeEventLoop内添加给定fd上的给定关注事件(设置到events[fd])，并设置处理函数
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
         aeFileProc *proc, void *clientData)
 {
@@ -407,7 +408,9 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         }
 
         /* Call the multiplexing API, will return only on timeout or when
-         * some event fires. */
+         * some event fires. 
+		 * 
+		 * 如果有关注的事件发生，则这些事件都被正确地设置到aeEventLoop的fired属性*/
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* After sleep callback. */
@@ -494,7 +497,7 @@ int aeWait(int fd, int mask, long long milliseconds) {
 }
 
 /*
- * 处理事件循环
+ * 处理事件循环，不断调用aeProcessEvents处理网络事件
  */
 void aeMain(aeEventLoop *eventLoop) {
     eventLoop->stop = 0;

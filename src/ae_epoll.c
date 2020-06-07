@@ -33,6 +33,7 @@
 
 typedef struct aeApiState {
     int epfd;
+	// 每次epoll_wait后得到的事件列表
     struct epoll_event *events;
 } aeApiState;
 
@@ -105,6 +106,7 @@ static void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask) {
     }
 }
 
+// epoll_wait出事件，并正确设置aeEventLoop的fired属性
 static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     aeApiState *state = eventLoop->apidata;
     int retval, numevents = 0;
