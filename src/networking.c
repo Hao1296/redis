@@ -27,6 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*在ae的基础上实现网络请求的读取及响应的写入
+ */
+
 #include "server.h"
 #include "atomicvar.h"
 #include <sys/socket.h>
@@ -1499,6 +1502,7 @@ void processInputBuffer(client *c) {
  * is flagged as master. Usually you want to call this instead of the
  * raw processInputBuffer(). */
 void processInputBufferAndReplicate(client *c) {
+	// 判断当前client是否为Master(若为master，则处于Replication上下文)
     if (!(c->flags & CLIENT_MASTER)) {
         processInputBuffer(c);
     } else {

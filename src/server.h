@@ -612,6 +612,8 @@ typedef struct RedisModuleDigest {
 #define LRU_CLOCK_RESOLUTION 1000 /* LRU clock resolution in ms */
 
 #define OBJ_SHARED_REFCOUNT INT_MAX
+
+/*对象头*/
 typedef struct redisObject {
     unsigned type:4;
     unsigned encoding:4;
@@ -937,7 +939,7 @@ struct clusterState;
 #define CHILD_INFO_MAGIC 0xC17DDA7A12345678LL
 #define CHILD_INFO_TYPE_RDB 0
 #define CHILD_INFO_TYPE_AOF 1
-
+// Server状态
 struct redisServer {
     /* General */
     pid_t pid;                  /* Main process pid. */
@@ -949,7 +951,9 @@ struct redisServer {
                                    the actual 'hz' field value if dynamic-hz
                                    is enabled. */
     int hz;                     /* serverCron() calls frequency in hertz */
+	// 数据存储对象，维护了多个dict
     redisDb *db;
+	// 命令表
     dict *commands;             /* Command table */
     dict *orig_commands;        /* Command table before command renaming. */
     aeEventLoop *el;
@@ -1308,8 +1312,10 @@ typedef struct pubsubPattern {
 
 typedef void redisCommandProc(client *c);
 typedef int *redisGetKeysProc(struct redisCommand *cmd, robj **argv, int argc, int *numkeys);
+//Redis命令的抽象
 struct redisCommand {
     char *name;
+	// 命令的执行逻辑
     redisCommandProc *proc;
     int arity;
     char *sflags; /* Flags as string representation, one char per flag. */
