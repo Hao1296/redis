@@ -822,7 +822,9 @@ typedef struct zskiplistNode {
 
 typedef struct zskiplist {
     struct zskiplistNode *header, *tail;
+	// 跳跃表长度(除头尾节点外)
     unsigned long length;
+	// 跳跃表高度(除头节点外)
     int level;
 } zskiplist;
 
