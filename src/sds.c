@@ -95,7 +95,7 @@ sds sdsnewlen(const void *init, size_t initlen) {
     if (type == SDS_TYPE_5 && initlen == 0) type = SDS_TYPE_8;
     int hdrlen = sdsHdrSize(type);
     unsigned char *fp; /* flags pointer. */
-
+	// +1是为了'\0';虽然sds是自定义结构，但其buf字段还是兼容c语言字符串的
     sh = s_malloc(hdrlen+initlen+1);
     if (init==SDS_NOINIT)
         init = NULL;
@@ -396,7 +396,7 @@ sds sdsgrowzero(sds s, size_t len) {
  * references must be substituted with the new pointer returned by the call. */
 sds sdscatlen(sds s, const void *t, size_t len) {
     size_t curlen = sdslen(s);
-
+	// 检查s是否有足够空间容纳len；如果没有，则扩容
     s = sdsMakeRoomFor(s,len);
     if (s == NULL) return NULL;
     memcpy(s+curlen, t, len);

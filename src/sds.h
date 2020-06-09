@@ -45,28 +45,35 @@ typedef char *sds;
 // sdshdrXX内的flags字段的低三位指示了sds类型(5/8/16/32/64)
 /* Note: sdshdr5 is never used, we just access the flags byte directly.
  * However is here to document the layout of type 5 SDS strings. */
+// 最大长度:2^5 = 32个字符
 struct __attribute__ ((__packed__)) sdshdr5 {
     unsigned char flags; /* 3 lsb of type, and 5 msb of string length */
     char buf[];
 };
+// 最大长度:2^8 - 1 = 255个字符
 struct __attribute__ ((__packed__)) sdshdr8 {
+	// 已用长度
     uint8_t len; /* used */
+	// buf数组总长度
     uint8_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
+// 最大长度:2^16 - 1 = 65535个字符
 struct __attribute__ ((__packed__)) sdshdr16 {
     uint16_t len; /* used */
     uint16_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
+// 最大长度:2^32 - 1 = 4294967295个字符
 struct __attribute__ ((__packed__)) sdshdr32 {
     uint32_t len; /* used */
     uint32_t alloc; /* excluding the header and null terminator */
     unsigned char flags; /* 3 lsb of type, 5 unused bits */
     char buf[];
 };
+// 最大长度:2^64 - 1 = 18446744073709551615个字符
 struct __attribute__ ((__packed__)) sdshdr64 {
     uint64_t len; /* used */
     uint64_t alloc; /* excluding the header and null terminator */
