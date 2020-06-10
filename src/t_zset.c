@@ -130,11 +130,14 @@ int zslRandomLevel(void) {
  * exist (up to the caller to enforce that). The skiplist takes ownership
  * of the passed SDS string 'ele'. */
 zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
+	// update[i]存储第i层插入位置的前一个节点
     zskiplistNode *update[ZSKIPLIST_MAXLEVEL], *x;
+	// rank[i]存储update[i]距离header的步长
     unsigned int rank[ZSKIPLIST_MAXLEVEL];
     int i, level;
 
     serverAssert(!isnan(score));
+	// 1. 确定各层的update和rank
     x = zsl->header;
     for (i = zsl->level-1; i >= 0; i--) {
         /* store rank that is crossed to reach the insert position */
@@ -153,6 +156,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
      * scores, reinserting the same element should never happen since the
      * caller of zslInsert() should test in the hash table if the element is
      * already inside or not. */
+	// 2. 计算当前节点的高度，并在该高度大于跳表高度时更新上几层的引用关系
     level = zslRandomLevel();
     if (level > zsl->level) {
         for (i = zsl->level; i < level; i++) {
@@ -162,6 +166,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
         }
         zsl->level = level;
     }
+	// 3. 通过更新节点间引用来将新节点插入跳表
     x = zslCreateNode(level,score,ele);
     for (i = 0; i < level; i++) {
         x->level[i].forward = update[i]->level[i].forward;
@@ -176,7 +181,7 @@ zskiplistNode *zslInsert(zskiplist *zsl, double score, sds ele) {
     for (i = level; i < zsl->level; i++) {
         update[i]->level[i].span++;
     }
-
+	// 4. 更新backward
     x->backward = (update[0] == zsl->header) ? NULL : update[0];
     if (x->level[0].forward)
         x->level[0].forward->backward = x;
