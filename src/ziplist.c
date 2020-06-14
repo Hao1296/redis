@@ -198,6 +198,8 @@
                                AA BB CC DD are a 4 bytes unsigned integer
                                representing the previous entry len. */
 
+// ziplist每一项可以存储整数或字节数组类型数据，不要求每一项的类型都相同，
+// 每一项的类型有其encoding字段标识
 /* Different encoding/length possibilities */
 #define ZIP_STR_MASK 0xc0
 #define ZIP_INT_MASK 0x30
