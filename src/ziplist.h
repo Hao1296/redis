@@ -34,6 +34,13 @@
 #define ZIPLIST_HEAD 0
 #define ZIPLIST_TAIL 1
 
+/*
+ * ziplist的内存布局经过精心设计,引入多个可变长字段,使得占用内存较少.
+ * 但可变长字段提升了操作的复杂性,
+ * 甚至在小概率情况下还会引发深度较高的"连锁更新".
+ * 每次连锁更新都涉及内存的realloc以及数据copy,会拖垮效率
+ */
+
 unsigned char *ziplistNew(void);
 unsigned char *ziplistMerge(unsigned char **first, unsigned char **second);
 unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int slen, int where);

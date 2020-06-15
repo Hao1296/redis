@@ -200,18 +200,20 @@
 
 // ziplist每一项可以存储整数或字节数组类型数据，不要求每一项的类型都相同，
 // 每一项的类型有其encoding字段标识
+// encoding表示类型的同时也负责指示content的长度
 /* Different encoding/length possibilities */
-#define ZIP_STR_MASK 0xc0
-#define ZIP_INT_MASK 0x30
-#define ZIP_STR_06B (0 << 6)
-#define ZIP_STR_14B (1 << 6)
-#define ZIP_STR_32B (2 << 6)
-#define ZIP_INT_16B (0xc0 | 0<<4)
-#define ZIP_INT_32B (0xc0 | 1<<4)
-#define ZIP_INT_64B (0xc0 | 2<<4)
-#define ZIP_INT_24B (0xc0 | 3<<4)
-#define ZIP_INT_8B 0xfe
+#define ZIP_STR_MASK 0xc0        //11 000000
+#define ZIP_INT_MASK 0x30        //00 110000
+#define ZIP_STR_06B (0 << 6)     //00 ffffff,1字节,指示content为最长63的字节数组,后6位表示content长度
+#define ZIP_STR_14B (1 << 6)     //01 ffffff ffffffff,2字节,指示content为最长2^14 - 1的字节数组,后14为表示content长度
+#define ZIP_STR_32B (2 << 6)     //10 000000 f...x32,5字节,指示content为最长2^32 - 1的字节数组，后32为表示content长度
+#define ZIP_INT_16B (0xc0 | 0<<4)//11 00 0000,1字节,指示content为int16整数
+#define ZIP_INT_32B (0xc0 | 1<<4)//11 01 0000,1字节,指示content为int32整数
+#define ZIP_INT_64B (0xc0 | 2<<4)//11 10 0000,1字节,指示content为int64整数
+#define ZIP_INT_24B (0xc0 | 3<<4)//11 11 0000,1字节,指示content为int24整数
+#define ZIP_INT_8B 0xfe          //11 11 1110,1字节,指示content为int8整数
 
+// 另外还有一个特殊encoding 11 11xxxx,无content字段,用xxxx来存储0-13的整数(14就对应ZIP_INT_8B的encoding了)
 /* 4 bit integer immediate encoding |1111xxxx| with xxxx between
  * 0001 and 1101. */
 #define ZIP_INT_IMM_MASK 0x0f   /* Mask to extract the 4 bits value. To add
@@ -269,7 +271,10 @@
 
 /* We use this function to receive information about a ziplist entry.
  * Note that this is not how the data is actually encoded, is just what we
- * get filled by a function in order to operate more easily. */
+ * get filled by a function in order to operate more easily. 
+ *
+ * ziplist解码后的元素表示结构体.
+ */
 typedef struct zlentry {
     unsigned int prevrawlensize; /* Bytes used to encode the previous entry len*/
     unsigned int prevrawlen;     /* Previous entry len. */
@@ -282,10 +287,17 @@ typedef struct zlentry {
                                     0 (for 4 bit immediate) depending on the
                                     number range. */
     unsigned int headersize;     /* prevrawlensize + lensize. */
+
+    // ziplist每一项可存储整数或字节数组两类数据,
+	// 且不要求每一项类型相同.
+	// 元素具体类型用该encoding类型表示.
+	// (细分类型有9个)
     unsigned char encoding;      /* Set to ZIP_STR_* or ZIP_INT_* depending on
                                     the entry encoding. However for 4 bits
                                     immediate integers this can assume a range
                                     of values and must be range-checked. */
+	// 指向当前ziplist元素的起始位置，
+	// 即previous_entry_length字段
     unsigned char *p;            /* Pointer to the very start of the entry, that
                                     is, this points to prev-entry-len field. */
 } zlentry;
@@ -567,7 +579,11 @@ int64_t zipLoadInteger(unsigned char *p, unsigned char encoding) {
     return ret;
 }
 
-/* Return a struct with all information about an entry. */
+/* Return a struct with all information about an entry. 
+ *
+ * 解码ziplist元素，并用zlentry结构体表示.
+ * 参数p是指向目标元素的指针
+ */
 void zipEntry(unsigned char *p, zlentry *e) {
 
     ZIP_DECODE_PREVLEN(p, e->prevrawlensize, e->prevrawlen);
@@ -576,9 +592,12 @@ void zipEntry(unsigned char *p, zlentry *e) {
     e->p = p;
 }
 
-/* Create a new empty ziplist. */
+/* Create a new empty ziplist. 
+ * 返回指向整个ziplist起始位置的指针
+ */
 unsigned char *ziplistNew(void) {
-    unsigned int bytes = ZIPLIST_HEADER_SIZE+ZIPLIST_END_SIZE;
+	//ZIPLIST_HEADER_SIZE = zlbytes + zltail + zllen
+    unsigned int bytes = ZIPLIST_HEADER_SIZE+ZIPLIST_END_SIZE;// 4+4+2+1=11
     unsigned char *zl = zmalloc(bytes);
     ZIPLIST_BYTES(zl) = intrev32ifbe(bytes);
     ZIPLIST_TAIL_OFFSET(zl) = intrev32ifbe(ZIPLIST_HEADER_SIZE);
@@ -676,7 +695,11 @@ unsigned char *__ziplistCascadeUpdate(unsigned char *zl, unsigned char *p) {
     return zl;
 }
 
-/* Delete "num" entries, starting at "p". Returns pointer to the ziplist. */
+/* Delete "num" entries, starting at "p". Returns pointer to the ziplist. 
+ * 1. 计算待删除元素的总长度;
+ * 2. 复制移动数据;
+ * 3. resize以缩小当前内存空间
+ */
 unsigned char *__ziplistDelete(unsigned char *zl, unsigned char *p, unsigned int num) {
     unsigned int i, totlen, deleted = 0;
     size_t offset;
@@ -734,14 +757,26 @@ unsigned char *__ziplistDelete(unsigned char *zl, unsigned char *p, unsigned int
         p = zl+offset;
 
         /* When nextdiff != 0, the raw length of the next entry has changed, so
-         * we need to cascade the update throughout the ziplist */
+         * we need to cascade the update throughout the ziplist 
+		 * 处理连锁更新
+		 */
         if (nextdiff != 0)
             zl = __ziplistCascadeUpdate(zl,p);
     }
     return zl;
 }
 
-/* Insert item at "p". */
+/* Insert item at "p". 
+ * 插入逻辑的实际执行者,ziplistInsert函数也被代理至此.
+ * 1. 编码待插入元素
+ * 2. resize当前ziplist以扩大内存空间
+ * 3. copy数据
+ *
+ * zl:ziplist首地址
+ * p:元素插入的目标位置
+ * s:待插入的数据内容
+ * slen:待插入的数据长度
+ */
 unsigned char *__ziplistInsert(unsigned char *zl, unsigned char *p, unsigned char *s, unsigned int slen) {
     size_t curlen = intrev32ifbe(ZIPLIST_BYTES(zl)), reqlen;
     unsigned int prevlensize, prevlen = 0;
