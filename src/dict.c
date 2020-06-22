@@ -152,12 +152,18 @@ int dictExpand(dict *d, unsigned long size)
         return DICT_ERR;
 
     dictht n; /* the new hash table */
-    unsigned long realsize = _dictNextPower(size);
+    unsigned long realsize = _dictNextPower(size);// 计算扩容的目标大小,2的N次方
 
     /* Rehashing to the same table size is not useful. */
     if (realsize == d->ht[0].size) return DICT_ERR;
 
-    /* Allocate the new hash table and initialize all pointers to NULL */
+    /* Allocate the new hash table and initialize all pointers to NULL 
+	 * 扩容后,所有的add操作直接以ht[1]为目标;所有涉及"查找"的操作
+	 * (如更新,删除,查询)需要先检查ht[0],若没查到,则检查ht[1].
+	 * 
+	 * rehash过程结束后,ht[0]数据已被全部迁移到ht[1],
+	 * 并且ht[0]会被赋值为ht[1]. 
+	 */
     n.size = realsize;
     n.sizemask = realsize-1;
     n.table = zcalloc(realsize*sizeof(dictEntry*));
@@ -172,7 +178,7 @@ int dictExpand(dict *d, unsigned long size)
 
     /* Prepare a second hash table for incremental rehashing */
     d->ht[1] = n;
-    d->rehashidx = 0;
+    d->rehashidx = 0;//设置rehash标记,之后要执行rehash动作
     return DICT_OK;
 }
 
@@ -184,7 +190,14 @@ int dictExpand(dict *d, unsigned long size)
  * since part of the hash table may be composed of empty spaces, it is not
  * guaranteed that this function will rehash even a single bucket, since it
  * will visit at max N*10 empty buckets in total, otherwise the amount of
- * work it does would be unbound and the function may block for a long time. */
+ * work it does would be unbound and the function may block for a long time. 
+ * 
+ * Redis采用"渐进式rehash":
+ * 出于性能考虑,很难有时间一次性将rehash执行完毕,
+ * 故rehash的每一步(一个dictEntry的rehash)被分散至dict的 插入|删除|查找|修改 操作之中.
+ *
+ * 若服务有空闲的机会,则会调用incrementallyRehash来批量执行rehash
+ */
 int dictRehash(dict *d, int n) {
     int empty_visits = n*10; /* Max number of empty buckets to visit. */
     if (!dictIsRehashing(d)) return 0;
@@ -261,9 +274,14 @@ static void _dictRehashStep(dict *d) {
     if (d->iterators == 0) dictRehash(d,1);
 }
 
-/* Add an element to the target hash table */
+/* Add an element to the target hash table 
+ * 注意，若key已经存在于当前dict，则会返回DICT_ERR.
+ * 故在调用该函数前需要作存在性检查.
+ */
 int dictAdd(dict *d, void *key, void *val)
 {
+	// 创建dictEntry,设置key,并将新的dictEntry插入至key所对应的位置,最后返回dictEntry
+	// 如果key已存在,则返回NULL
     dictEntry *entry = dictAddRaw(d,key,NULL);
 
     if (!entry) return DICT_ERR;
@@ -294,7 +312,7 @@ dictEntry *dictAddRaw(dict *d, void *key, dictEntry **existing)
     long index;
     dictEntry *entry;
     dictht *ht;
-
+	// 若dict正处于rehash过程中,则执行一次rehash
     if (dictIsRehashing(d)) _dictRehashStep(d);
 
     /* Get the index of the new element, or -1 if
@@ -399,7 +417,9 @@ static dictEntry *dictGenericDelete(dict *d, const void *key, int nofree) {
 }
 
 /* Remove an element, returning DICT_OK on success or DICT_ERR if the
- * element was not found. */
+ * element was not found. 
+ * 实际使用量小于总空间10%后会触发缩容
+ */
 int dictDelete(dict *ht, const void *key) {
     return dictGenericDelete(ht,key,0) ? DICT_OK : DICT_ERR;
 }

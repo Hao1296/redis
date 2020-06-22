@@ -45,38 +45,47 @@
 #define DICT_NOTUSED(V) ((void) V)
 
 typedef struct dictEntry {
-    void *key;
+    void *key;// 键
     union {
-        void *val;
+        void *val; // 在db.dict中会使用,存储val
         uint64_t u64;
-        int64_t s64;
+        int64_t s64;// 在db.expires中会使用,存储过期时间
         double d;
-    } v;
-    struct dictEntry *next;
+    } v;// 值，在不同场景下有不同的类型
+    struct dictEntry *next;// Hahs拉链的下一个节点
 } dictEntry;
 
+/*
+ * 不同dict的key或value的类型可能不同,
+   需要针对不同类型的key或value定义不同的操作函数
+ */
 typedef struct dictType {
     uint64_t (*hashFunction)(const void *key);
+	// 拷贝key数据
     void *(*keyDup)(void *privdata, const void *key);
+	// 拷贝值数据
     void *(*valDup)(void *privdata, const void *obj);
+	// 比较两个key
     int (*keyCompare)(void *privdata, const void *key1, const void *key2);
+	// 销毁key数据
     void (*keyDestructor)(void *privdata, void *key);
+	// 销毁value数据
     void (*valDestructor)(void *privdata, void *obj);
 } dictType;
 
 /* This is our hash table structure. Every dictionary has two of this as we
  * implement incremental rehashing, for the old to the new table. */
 typedef struct dictht {
-    dictEntry **table;
-    unsigned long size;
-    unsigned long sizemask;
-    unsigned long used;
+    dictEntry **table; 
+    unsigned long size;// table中包含的hash槽的数量
+    unsigned long sizemask;// 掩码,值为size-1 (对应二进制位上全是1)
+    unsigned long used;// 已保存的元素数量
 } dictht;
 
 typedef struct dict {
-    dictType *type;
-    void *privdata;
-    dictht ht[2];
+    dictType *type;// 该字典对应的特定操作函数
+    void *privdata;//该字典依赖的数据,会作为type内各函数的参数
+    dictht ht[2];//键值存储,只有当字段扩容或rehash是才会用上ht[1]
     long rehashidx; /* rehashing not in progress if rehashidx == -1 */
     unsigned long iterators; /* number of iterators currently running */
 } dict;
@@ -87,8 +96,12 @@ typedef struct dict {
  * should be called while iterating. */
 typedef struct dictIterator {
     dict *d;
-    long index;
+    long index;//当前迭代到哈希表的哪个hash槽
+	/* table指示当前正在遍历ht[0]还是ht[1],
+	 * safe指示当前对象是否为安全迭代器
+	 */
     int table, safe;
+	// 当前所在节点&下一个节点
     dictEntry *entry, *nextEntry;
     /* unsafe iterator fingerprint for misuse detection. */
     long long fingerprint;
