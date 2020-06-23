@@ -87,7 +87,12 @@ typedef struct dict {
     void *privdata;//该字典依赖的数据,会作为type内各函数的参数
     dictht ht[2];//键值存储,只有当字段扩容或rehash是才会用上ht[1]
     long rehashidx; /* rehashing not in progress if rehashidx == -1 */
-    unsigned long iterators; /* number of iterators currently running */
+	/* number of iterators currently running 
+	 * 
+	 * 当前字典上存在的安全迭代器数量.
+	 * 若该数量不为0,则不允许执行渐进式rehash(step会被跳过)
+	 */
+    unsigned long iterators; 
 } dict;
 
 /* If safe is set to 1 this is a safe iterator, that means, you can call
@@ -95,15 +100,20 @@ typedef struct dict {
  * iterating. Otherwise it is a non safe iterator, and only dictNext()
  * should be called while iterating. */
 typedef struct dictIterator {
-    dict *d;
+    dict *d;//当前正在迭代的dict
     long index;//当前迭代到哈希表的哪个hash槽
 	/* table指示当前正在遍历ht[0]还是ht[1],
-	 * safe指示当前对象是否为安全迭代器
+	 * safe指示当前对象是否为安全迭代器.
+	 *
+	 * 普通迭代器遍历数据时不允许哈希表有任何变更(通过对比前后的fingerprint来实现);
+	 * 安全迭代器则允许在遍历的过程中对数据作更改(如添加节点/删除节点等等)
 	 */
     int table, safe;
 	// 当前所在节点&下一个节点
     dictEntry *entry, *nextEntry;
-    /* unsafe iterator fingerprint for misuse detection. */
+    /* unsafe iterator fingerprint for misuse detection. 
+	 * 字典的指纹,若字典的值发生变化,则该值发生变化
+	 */
     long long fingerprint;
 } dictIterator;
 
@@ -174,9 +184,13 @@ void dictRelease(dict *d);
 dictEntry * dictFind(dict *d, const void *key);
 void *dictFetchValue(dict *d, const void *key);
 int dictResize(dict *d);
+// 生成迭代器
 dictIterator *dictGetIterator(dict *d);
+// 生成安全迭代器
 dictIterator *dictGetSafeIterator(dict *d);
+// 通过迭代器访问下一个节点
 dictEntry *dictNext(dictIterator *iter);
+// 销毁迭代器
 void dictReleaseIterator(dictIterator *iter);
 dictEntry *dictGetRandomKey(dict *d);
 unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int count);
@@ -190,7 +204,14 @@ int dictRehash(dict *d, int n);
 int dictRehashMilliseconds(dict *d, int ms);
 void dictSetHashFunctionSeed(uint8_t *seed);
 uint8_t *dictGetHashFunctionSeed(void);
-unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, dictScanBucketFunction *bucketfn, void *privdata);
+/*
+ * 以"间断遍历"的方式遍历字典(相对于"迭代器遍历"而言)
+ */
+unsigned long dictScan(dict *d, //待scan的字典
+	unsigned long v, //起点的游标(hash槽的index)
+	dictScanFunction *fn, //函数指针,每遍历一个节点就调用该函数处理
+	dictScanBucketFunction *bucketfn, //碎片整理时调用
+	void *privdata);
 uint64_t dictGetHash(dict *d, const void *key);
 dictEntry **dictFindEntryRefByPtrAndHash(dict *d, const void *oldptr, uint64_t hash);
 
