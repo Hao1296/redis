@@ -857,6 +857,9 @@ static unsigned long rev(unsigned long v) {
  *    we are sure we don't miss keys moving during rehashing.
  * 3) The reverse cursor is somewhat hard to understand at first, but this
  *    comment is supposed to help.
+ *
+ * 使用"翻转二进制迭代"的顺序，即从高向低进位(例如:000,100,010,110,001,101,011,111).
+ * 可保证扩容过程中元素不重不丢,缩容过程中有小概率出现少量数据重复
  */
 unsigned long dictScan(dict *d,
                        unsigned long v,
