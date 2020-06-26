@@ -44,10 +44,10 @@
 typedef struct quicklistNode {
     struct quicklistNode *prev;
     struct quicklistNode *next;
-    unsigned char *zl;
+    unsigned char *zl;/* 指向ziplist */
     unsigned int sz;             /* ziplist size in bytes */
     unsigned int count : 16;     /* count of items in ziplist */
-    unsigned int encoding : 2;   /* RAW==1 or LZF==2 */
+    unsigned int encoding : 2;   /* 是否被压缩:RAW==1 or LZF==2 */
     unsigned int container : 2;  /* NONE==1 or ZIPLIST==2 */
     unsigned int recompress : 1; /* was this node previous compressed? */
     unsigned int attempted_compress : 1; /* node can't compress; too small */
@@ -69,32 +69,40 @@ typedef struct quicklistLZF {
  * 'len' is the number of quicklist nodes.
  * 'compress' is: -1 if compression disabled, otherwise it's the number
  *                of quicklistNodes to leave uncompressed at ends of quicklist.
- * 'fill' is the user-requested (or default) fill factor. */
+ * 'fill' is the user-requested (or default) fill factor. 
+ * quicklist是以ziplist为节点(节点数据可能被压缩)的双向链表,元素包含在ziplist内
+ */
 typedef struct quicklist {
     quicklistNode *head;
     quicklistNode *tail;
-    unsigned long count;        /* total count of all entries in all ziplists */
-    unsigned long len;          /* number of quicklistNodes */
-    int fill : 16;              /* fill factor for individual nodes */
+    unsigned long count;        /* 元素总数(total count of all entries in all ziplists) */
+    unsigned long len;          /* 节点总数(number of quicklistNodes) */
+    int fill : 16;              /* ziplist包含的最大元素数量(fill factor for individual nodes) */
     unsigned int compress : 16; /* depth of end nodes not to compress;0=off */
 } quicklist;
 
+/*
+ * quicklist迭代器
+ */
 typedef struct quicklistIter {
     const quicklist *quicklist;
     quicklistNode *current;
-    unsigned char *zi;
+    unsigned char *zi;/*元素所在ziplist*/
     long offset; /* offset in current ziplist */
     int direction;
 } quicklistIter;
 
+/*
+ * 解析ziplist时所使用的的结构体
+ */
 typedef struct quicklistEntry {
-    const quicklist *quicklist;
-    quicklistNode *node;
-    unsigned char *zi;
-    unsigned char *value;
-    long long longval;
-    unsigned int sz;
-    int offset;
+    const quicklist *quicklist;/*所属quicklist*/
+    quicklistNode *node;/*所属node*/
+    unsigned char *zi;/*元素所在ziplist*/
+    unsigned char *value;/*该元素的字符串内容*/
+    long long longval;/*该元素的整型值*/
+    unsigned int sz;/*该元素占用空间大小*/
+    int offset;/*该元素相对于ziplist起始位置的偏移量*/
 } quicklistEntry;
 
 #define QUICKLIST_HEAD 0
