@@ -469,7 +469,9 @@ void delGenericCommand(client *c, int lazy) {
     int numdel = 0, j;
 
     for (j = 1; j < c->argc; j++) {
+        // 检查key过期时间;若已过期,则删除key,并触发"expired"事件
         expireIfNeeded(c->db,c->argv[j]);
+        // 删除db->dict,db->expires内相关项(可选择value对象是同步释放还是异步释放)
         int deleted  = lazy ? dbAsyncDelete(c->db,c->argv[j]) :
                               dbSyncDelete(c->db,c->argv[j]);
         if (deleted) {
