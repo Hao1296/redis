@@ -66,7 +66,7 @@ static int checkStringLength(client *c, long long size) {
 
 void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply, robj *abort_reply) {
     long long milliseconds = 0; /* initialized to avoid any harmness warning */
-
+    // 1. 计算expire毫秒数
     if (expire) {
         if (getLongLongFromObjectOrReply(c, expire, &milliseconds, NULL) != C_OK)
             return;
@@ -76,14 +76,15 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
         }
         if (unit == UNIT_SECONDS) milliseconds *= 1000;
     }
-
+    // 2. 根据保存在flags中的NX或XX来判断当前是否满足存入k-v的条件
     if ((flags & OBJ_SET_NX && lookupKeyWrite(c->db,key) != NULL) ||
         (flags & OBJ_SET_XX && lookupKeyWrite(c->db,key) == NULL))
     {
         addReply(c, abort_reply ? abort_reply : shared.nullbulk);
         return;
     }
-    setKey(c->db,key,val);
+    // 3. 设置db->dict和db->expires
+    setKey(c->db,key,val);// 注意: setKey内部会调用removeExpire来清除过期时间
     server.dirty++;
     if (expire) setExpire(c,c->db,key,mstime()+milliseconds);
     notifyKeyspaceEvent(NOTIFY_STRING,"set",key,c->db->id);
@@ -92,8 +93,15 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     addReply(c, ok_reply ? ok_reply : shared.ok);
 }
 
-/* SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>] */
+/* SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>] 
+ *
+ * 分为三部分:
+ * 1. 参数解析；
+ * 2. value优化;
+ * 3. k-v存入redisDb
+ */
 void setCommand(client *c) {
+    // 1. 参数解析
     int j;
     robj *expire = NULL;
     int unit = UNIT_SECONDS;
@@ -134,8 +142,9 @@ void setCommand(client *c) {
             return;
         }
     }
-
+    // 2. value优化
     c->argv[2] = tryObjectEncoding(c->argv[2]);
+    // 3. k-v存入redisDb
     setGenericCommand(c,flags,c->argv[1],c->argv[2],expire,unit,NULL,NULL);
 }
 
