@@ -42,6 +42,8 @@ void hashTypeTryConversion(robj *o, robj **argv, int start, int end) {
 
     if (o->encoding != OBJ_ENCODING_ZIPLIST) return;
 
+    // 检查客户端传来的参数长度是否大于hash_max_ziplist_value
+    // 若大于，则将目标散列表由ziplist改为hashtable
     for (i = start; i <= end; i++) {
         if (sdsEncodedObject(argv[i]) &&
             sdslen(argv[i]->ptr) > server.hash_max_ziplist_value)
@@ -462,6 +464,7 @@ robj *hashTypeLookupWriteOrCreate(client *c, robj *key) {
     return o;
 }
 
+// 将ziplist结构的hash转为目标encoding(其实就是hashtable)
 void hashTypeConvertZiplist(robj *o, int enc) {
     serverAssert(o->encoding == OBJ_ENCODING_ZIPLIST);
 
@@ -537,6 +540,9 @@ void hsetCommand(client *c) {
     }
 
     if ((o = hashTypeLookupWriteOrCreate(c,c->argv[1])) == NULL) return;
+    // 检查客户端传来的新参数，判断能否维持在ziplist(若是的话)
+    // 备注: hash只能由ziplist转为hashtable，而不会由hashtable转为ziplist，
+    // 哪怕元素个数及长度小到满足条件
     hashTypeTryConversion(o,c->argv,2,c->argc-1);
 
     for (i = 2; i < c->argc; i += 2)
