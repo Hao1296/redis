@@ -651,8 +651,8 @@ typedef struct redisDb {
     dict *dict;                 /* The keyspace for this DB */
     // 该dict的key为redis key, value为该key的过期时间戳(UTC毫秒)
     dict *expires;              /* Timeout of keys with a timeout set */
-    dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP)*/
-    dict *ready_keys;           /* Blocked keys that received a PUSH */
+    dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP) (其中key为阻塞中的列表key, robj类型;value为client列表,listNode*类型)*/
+    dict *ready_keys;           /* Blocked keys that received a PUSH (其中key为阻塞中的列表key, robj类型;value为client列表,listNode*类型)*/
     dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
     int id;                     /* Database ID */
     long long avg_ttl;          /* Average TTL, just for stats */
@@ -737,7 +737,7 @@ typedef struct client {
                                the master. */
     size_t querybuf_peak;   /* Recent (100ms or more) peak of querybuf size. */
     int argc;               /* Num of arguments of current command. */
-    robj **argv;            /* Arguments of current command. */
+    robj **argv;            /* Arguments of current command. (注意,这里是robj类型,而非char*或sds)*/
     struct redisCommand *cmd, *lastcmd;  /* Last command executed. */
     int reqtype;            /* Request protocol type: PROTO_REQ_* */
     int multibulklen;       /* Number of multi bulk arguments left to read. */
