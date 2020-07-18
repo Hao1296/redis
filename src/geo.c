@@ -401,7 +401,10 @@ static int sort_gp_desc(const void *a, const void *b) {
  * Commands
  * ==================================================================== */
 
-/* GEOADD key long lat name [long2 lat2 name2 ... longN latN nameN] */
+/* GEOADD key long lat name [long2 lat2 name2 ... longN latN nameN] 
+ *
+ * 将经纬度转化为z-order value,然后作为score存入sorted set.
+ */
 void geoaddCommand(client *c) {
     /* Check arguments number for sanity. */
     if ((c->argc - 2) % 3 != 0) {
