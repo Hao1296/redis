@@ -653,7 +653,10 @@ typedef struct redisDb {
     dict *expires;              /* Timeout of keys with a timeout set */
     dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP) (其中key为阻塞中的列表key, robj类型;value为client列表,listNode*类型)*/
     dict *ready_keys;           /* Blocked keys that received a PUSH (其中key为阻塞中的列表key, robj类型;value为client列表,listNode*类型)*/
-    dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
+    /* WATCHED keys for MULTI/EXEC CAS 
+     *  每次执行写命令后都会执行touchWatchedKey函数来处理watch相关逻辑;
+     */
+    dict *watched_keys;         
     int id;                     /* Database ID */
     long long avg_ttl;          /* Average TTL, just for stats */
     list *defrag_later;         /* List of key names to attempt to defrag one by one, gradually. */
@@ -667,7 +670,10 @@ typedef struct multiCmd {
 } multiCmd;
 
 typedef struct multiState {
-    multiCmd *commands;     /* Array of MULTI commands */
+    /* Array of MULTI commands;
+     * 命令队列,存储了每个命令的实现函数及参数;
+     */
+    multiCmd *commands;     
     int count;              /* Total number of MULTI commands */
     int cmd_flags;          /* The accumulated command flags OR-ed together.
                                So if at least a command has a given flag, it
@@ -749,7 +755,12 @@ typedef struct client {
     time_t ctime;           /* Client creation time. */
     time_t lastinteraction; /* Time of the last interaction, used for timeout */
     time_t obuf_soft_limit_reached_time;
-    int flags;              /* Client flags: CLIENT_* macros. */
+    /* Client flags: CLIENT_* macros. 
+     * 列举其中较为重要的几个:
+     * 1. CLIENT_MULTI: 表示当前客户端处于由multi开启的事务中;
+     * 2. CLIENT_DIRTY_CAS: 表示该客户端所watch的key发生了更改;
+     */
+    int flags;              
     int authenticated;      /* When requirepass is non-NULL. */
     int replstate;          /* Replication state if this is a slave. */
     int repl_put_online_on_ack; /* Install slave write handler on first ACK. */
@@ -768,7 +779,10 @@ typedef struct client {
     int slave_listening_port; /* As configured with: SLAVECONF listening-port */
     char slave_ip[NET_IP_STR_LEN]; /* Optionally given by REPLCONF ip-address */
     int slave_capa;         /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
-    multiState mstate;      /* MULTI/EXEC state */
+    /* MULTI/EXEC state;
+     * 存储multi范围内的命令队列 & 一些必要的元数据;
+     */
+    multiState mstate;      
     int btype;              /* Type of blocking op if CLIENT_BLOCKED. */
     blockingState bpop;     /* blocking state */
     long long woff;         /* Last write global replication offset. */

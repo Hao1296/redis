@@ -2768,14 +2768,16 @@ int processCommand(client *c) {
         return C_OK;
     }
 
-    /* Exec the command */
+    /* Exec the command 
+     * 会根据是否处于事务状态而执行不同逻辑;
+     */
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand)
-    {
+    {// 当前客户端处于事务中,命令入队不执行
         queueMultiCommand(c);
         addReply(c,shared.queued);
-    } else {
+    } else {// 当前客户端未处于事务中,命令执行不入队
         call(c,CMD_CALL_FULL);
         c->woff = server.master_repl_offset;
         if (listLength(server.ready_keys))
