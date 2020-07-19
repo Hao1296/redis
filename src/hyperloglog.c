@@ -178,12 +178,25 @@
  * when this implementation switches to the dense representation is
  * configured via the define server.hll_sparse_max_bytes.
  */
+/*
+ * 概率计数算法按空间复杂度大体分为2类:
+ * 1. 线性计数法O(N);
+ *   a. Linear Counting(LC);
+ * 2. 对数计数法O(loglogN);
+ *   a. LogLog Counting(LLC);
+ *   b. HyperLogLog Counting(HLLC);
+ */
 
 struct hllhdr {
     char magic[4];      /* "HYLL" */
-    uint8_t encoding;   /* HLL_DENSE or HLL_SPARSE. */
+    /* HLL_DENSE or HLL_SPARSE. 
+     * 稀疏编码(HLL_SPARSE)用于在数据量较少时实现数据压缩(2^14个分组存储的值均不大于32,总长度不大于3000字节);
+     * 密集编码(HLL_DENSE)则用于在数据量较大时使用非压缩形式存储数据.
+     * HLL_DENSE和HLL_SPARSE同样会体现在redisObj->encoding字段.
+     */
+    uint8_t encoding;   
     uint8_t notused[3]; /* Reserved for future use, must be zero. */
-    uint8_t card[8];    /* Cached cardinality, little endian. */
+    uint8_t card[8];    /* Cached cardinality, little endian. 基数估计的缓存值*/
     uint8_t registers[]; /* Data bytes. */
 };
 
