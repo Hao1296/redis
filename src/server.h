@@ -1267,7 +1267,8 @@ struct redisServer {
     ustime_t ustime;            /* 'unixtime' in microseconds. */
     /* Pubsub */
     dict *pubsub_channels;  /* Map channels to list of subscribed clients */
-    list *pubsub_patterns;  /* A list of pubsub_patterns */
+    /* A list of pubsub_patterns;包含pattern及其订阅的客户端;pattern匹配时会遍历列表，线性复杂度 */
+    list *pubsub_patterns;  
     int notify_keyspace_events; /* Events to propagate via Pub/Sub. This is an
                                    xor of NOTIFY_... flags. */
     /* Cluster */
