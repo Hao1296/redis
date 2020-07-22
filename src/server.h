@@ -1169,13 +1169,19 @@ struct redisServer {
     char *syslog_ident;             /* Syslog ident */
     int syslog_facility;            /* Syslog facility */
     /* Replication (master) */
-    char replid[CONFIG_RUN_ID_SIZE+1];  /* My current replication ID. */
+    /* 
+     * My current replication ID. 
+     * 40位随机字符串.
+     * 对于master而言,该字段为自身id;
+     * 对于slave而言,该项是其对应的master的id.
+     */
+    char replid[CONFIG_RUN_ID_SIZE+1];  
     char replid2[CONFIG_RUN_ID_SIZE+1]; /* replid inherited from master*/
     long long master_repl_offset;   /* My current replication offset */
     long long second_replid_offset; /* Accept offsets up to this for replid2. */
     int slaveseldb;                 /* Last SELECTed DB in replication output */
-    int repl_ping_slave_period;     /* Master pings the slave every N seconds */
-    char *repl_backlog;             /* Replication backlog for partial syncs */
+    int repl_ping_slave_period;     /* Master pings the slave every N seconds. 默认每10s一次 */
+    char *repl_backlog;             /* Replication backlog for partial syncs, 复制缓冲区 */
     long long repl_backlog_size;    /* Backlog circular buffer size */
     long long repl_backlog_histlen; /* Backlog actual data length */
     long long repl_backlog_idx;     /* Backlog circular buffer current offset,
@@ -1186,7 +1192,7 @@ struct redisServer {
                                        gets released. */
     time_t repl_no_slaves_since;    /* We have no slaves since that time.
                                        Only valid if server.slaves len is 0. */
-    int repl_min_slaves_to_write;   /* Min number of slaves to write. */
+    int repl_min_slaves_to_write;   /* Min number of slaves to write. 若有效从节点数量小于该值,则master会拒绝写请求*/
     int repl_min_slaves_max_lag;    /* Max lag of <count> slaves to write. */
     int repl_good_slaves_count;     /* Number of slaves with lag <= max_lag. */
     int repl_diskless_sync;         /* Send RDB to slaves sockets directly. */
@@ -1207,7 +1213,7 @@ struct redisServer {
     int repl_transfer_fd;    /* Slave -> Master SYNC temp file descriptor */
     char *repl_transfer_tmpfile; /* Slave-> master SYNC temp file name */
     time_t repl_transfer_lastio; /* Unix time of the latest read, for timeout */
-    int repl_serve_stale_data; /* Serve stale data when link is down? */
+    int repl_serve_stale_data; /* Serve stale data when link is down? 从节点连不上主节点时是否仍要为外界提供服务*/
     int repl_slave_ro;          /* Slave is read only? */
     int repl_slave_ignore_maxmemory;    /* If true slaves do not evict. */
     time_t repl_down_since; /* Unix time at which link with master went down */

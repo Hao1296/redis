@@ -752,6 +752,7 @@ void syncCommand(client *c) {
              * diskless replication) and we don't have a BGSAVE in progress,
              * let's start one. */
             if (server.aof_child_pid == -1) {
+                // 至于后面的增量复制(BackLog), 见server.c中的call函数
                 startBgsaveForReplication(c->slave_capa);
             } else {
                 serverLog(LL_NOTICE,
@@ -1515,6 +1516,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
 
     aeDeleteFileEvent(server.el,fd,AE_READABLE);
 
+    // 若PSYNC的响应为+FULLRESYNC
     if (!strncmp(reply,"+FULLRESYNC",11)) {
         char *replid = NULL, *offset = NULL;
 
@@ -1548,6 +1550,7 @@ int slaveTryPartialResynchronization(int fd, int read_reply) {
         return PSYNC_FULLRESYNC;
     }
 
+    // 若PSYNC的响应为+CONTINUE
     if (!strncmp(reply,"+CONTINUE",9)) {
         /* Partial resync was accepted. */
         serverLog(LL_NOTICE,
@@ -2047,6 +2050,12 @@ void replicationHandleMasterDisconnection(void) {
      * the slaves only if we'll have to do a full resync with our master. */
 }
 
+/*
+ * 该函数只是设置与主从复制相关的变量(如redisServer->masterhost等),
+ * 并不执行连接master的逻辑.
+ * 和master间的通信由replicationCron函数负责, 
+ * 而replicationCron在serverCron函数中被设为每1s执行一次.
+ */
 void replicaofCommand(client *c) {
     /* SLAVEOF is not allowed in cluster mode as replication is automatically
      * configured using the current address of the master node. */
@@ -2058,7 +2067,7 @@ void replicaofCommand(client *c) {
     /* The special host/port combination "NO" "ONE" turns the instance
      * into a master. Otherwise the new master address is set. */
     if (!strcasecmp(c->argv[1]->ptr,"no") &&
-        !strcasecmp(c->argv[2]->ptr,"one")) {
+        !strcasecmp(c->argv[2]->ptr,"one")) {// slaveof no one (注意, strcasecmp在两字符串相等时返回0)
         if (server.masterhost) {
             replicationUnsetMaster();
             sds client = catClientInfoString(sdsempty(),c);
@@ -2077,7 +2086,7 @@ void replicaofCommand(client *c) {
             addReplyError(c, "Command is not valid when client is a replica.");
             return;
         }
-
+        // 读取c->argv[2]以设置port参数
         if ((getLongFromObjectOrReply(c, c->argv[2], &port, NULL) != C_OK))
             return;
 
@@ -2579,7 +2588,7 @@ void replicationCron(void) {
 
     /* Bulk transfer I/O timeout? */
     if (server.masterhost && server.repl_state == REPL_STATE_TRANSFER &&
-        (time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)
+        (time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)// repl_transfer_lastio是上次和读master的时间
     {
         serverLog(LL_WARNING,"Timeout receiving bulk data from MASTER... If the problem persists try to set the 'repl-timeout' parameter in redis.conf to a larger value.");
         cancelReplicationHandshake();
@@ -2597,6 +2606,7 @@ void replicationCron(void) {
     if (server.repl_state == REPL_STATE_CONNECT) {
         serverLog(LL_NOTICE,"Connecting to MASTER %s:%d",
             server.masterhost, server.masterport);
+        // 连接master, 并绑定读写事件到syncWithMaster函数
         if (connectWithMaster() == C_OK) {
             serverLog(LL_NOTICE,"MASTER <-> REPLICA sync started");
         }
