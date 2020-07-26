@@ -2576,7 +2576,8 @@ long long replicationGetSlaveOffset(void) {
 void replicationCron(void) {
     static long long replication_cron_loops = 0;
 
-    /* Non blocking connection timeout? */
+    // 下面5个是salve节点每秒一次的检查项
+    /* 1. Non blocking connection timeout? */
     if (server.masterhost &&
         (server.repl_state == REPL_STATE_CONNECTING ||
          slaveIsInHandshakeState()) &&
@@ -2586,7 +2587,7 @@ void replicationCron(void) {
         cancelReplicationHandshake();
     }
 
-    /* Bulk transfer I/O timeout? */
+    /* 2. Bulk transfer I/O timeout? */
     if (server.masterhost && server.repl_state == REPL_STATE_TRANSFER &&
         (time(NULL)-server.repl_transfer_lastio) > server.repl_timeout)// repl_transfer_lastio是上次和读master的时间
     {
@@ -2594,7 +2595,7 @@ void replicationCron(void) {
         cancelReplicationHandshake();
     }
 
-    /* Timed out master when we are an already connected slave? */
+    /* 3. Timed out master when we are an already connected slave? */
     if (server.masterhost && server.repl_state == REPL_STATE_CONNECTED &&
         (time(NULL)-server.master->lastinteraction) > server.repl_timeout)
     {
@@ -2602,7 +2603,7 @@ void replicationCron(void) {
         freeClient(server.master);
     }
 
-    /* Check if we should connect to a MASTER */
+    /* 4. Check if we should connect to a MASTER */
     if (server.repl_state == REPL_STATE_CONNECT) {
         serverLog(LL_NOTICE,"Connecting to MASTER %s:%d",
             server.masterhost, server.masterport);
@@ -2612,13 +2613,15 @@ void replicationCron(void) {
         }
     }
 
-    /* Send ACK to master from time to time.
+    /* 5. Send ACK to master from time to time.
+     * ------------------------------------------------------------
      * Note that we do not send periodic acks to masters that don't
      * support PSYNC and replication offsets. */
     if (server.masterhost && server.master &&
         !(server.master->flags & CLIENT_PRE_PSYNC))
         replicationSendAck();
 
+    // 下面7个是master节点每秒一次的检查项
     /* If we have attached slaves, PING them from time to time.
      * So slaves can implement an explicit timeout to masters, and will
      * be able to detect a link disconnection even if the TCP connection
@@ -2627,7 +2630,7 @@ void replicationCron(void) {
     listNode *ln;
     robj *ping_argv[1];
 
-    /* First, send PING according to ping_slave_period. */
+    /* 1. First, send PING according to ping_slave_period. */
     if ((replication_cron_loops % server.repl_ping_slave_period) == 0 &&
         listLength(server.slaves))
     {
@@ -2648,7 +2651,7 @@ void replicationCron(void) {
         }
     }
 
-    /* Second, send a newline to all the slaves in pre-synchronization
+    /* 2. Second, send a newline to all the slaves in pre-synchronization
      * stage, that is, slaves waiting for the master to create the RDB file.
      *
      * Also send the a newline to all the chained slaves we have, if we lost
@@ -2678,7 +2681,7 @@ void replicationCron(void) {
         }
     }
 
-    /* Disconnect timedout slaves. */
+    /* 3. Disconnect timedout slaves. */
     if (listLength(server.slaves)) {
         listIter li;
         listNode *ln;
@@ -2698,7 +2701,7 @@ void replicationCron(void) {
         }
     }
 
-    /* If this is a master without attached slaves and there is a replication
+    /* 4. If this is a master without attached slaves and there is a replication
      * backlog active, in order to reclaim memory we can free it after some
      * (configured) time. Note that this cannot be done for slaves: slaves
      * without sub-slaves attached should still accumulate data into the
@@ -2735,7 +2738,7 @@ void replicationCron(void) {
         }
     }
 
-    /* If AOF is disabled and we no longer have attached slaves, we can
+    /* 5. If AOF is disabled and we no longer have attached slaves, we can
      * free our Replication Script Cache as there is no need to propagate
      * EVALSHA at all. */
     if (listLength(server.slaves) == 0 &&
@@ -2745,7 +2748,7 @@ void replicationCron(void) {
         replicationScriptCacheFlush();
     }
 
-    /* Start a BGSAVE good for replication if we have slaves in
+    /* 6. Start a BGSAVE good for replication if we have slaves in
      * WAIT_BGSAVE_START state.
      *
      * In case of diskless replication, we make sure to wait the specified
@@ -2781,7 +2784,7 @@ void replicationCron(void) {
         }
     }
 
-    /* Refresh the number of slaves with lag <= min-slaves-max-lag. */
+    /* 7. Refresh the number of slaves with lag <= min-slaves-max-lag. */
     refreshGoodSlavesCount();
     replication_cron_loops++; /* Incremented with frequency 1 HZ. */
 }
