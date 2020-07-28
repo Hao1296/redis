@@ -2688,6 +2688,7 @@ void sentinelSendPeriodicCommands(sentinelRedisInstance *ri) {
     {
         info_period = 1000;
     } else {
+        // SENTINEL_INFO_PERIOD是10s
         info_period = SENTINEL_INFO_PERIOD;
     }
 
@@ -2695,6 +2696,7 @@ void sentinelSendPeriodicCommands(sentinelRedisInstance *ri) {
      * the configured 'down-after-milliseconds' time, but every second
      * anyway if 'down-after-milliseconds' is greater than 1 second. */
     ping_period = ri->down_after_period;
+    // SENTINEL_PING_PERIOD是1s
     if (ping_period > SENTINEL_PING_PERIOD) ping_period = SENTINEL_PING_PERIOD;
 
     /* Send INFO to masters and slaves, not sentinels. */
@@ -2714,7 +2716,9 @@ void sentinelSendPeriodicCommands(sentinelRedisInstance *ri) {
         sentinelSendPing(ri);
     }
 
-    /* PUBLISH hello messages to all the three kinds of instances. */
+    /* PUBLISH hello messages to all the three kinds of instances. 
+       每2s
+     */
     if ((now - ri->last_pub_time) > SENTINEL_PUBLISH_PERIOD) {
         sentinelSendHello(ri);
     }
@@ -4411,7 +4415,19 @@ void sentinelAbortFailover(sentinelRedisInstance *ri) {
 void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     /* ========== MONITORING HALF ============ */
     /* Every kind of instance */
+    /*
+       断线重连:
+       1. 和master或slave之间:2条连接, 分别为command连接和pubsub连接(消息连接), 断一个就算断线;
+       2. 和其他sentinel之间:只有一个command连接
+     */
     sentinelReconnectInstance(ri);
+    /*
+       周期性发送命令:
+       1. INFO: 对master和slave, 默认每10s一次INFO;
+       2. PING: 对所有类型节点(sentinel/master/slave), 默认每1s一次;
+       3. PUBLISH: 对所有类型节点(sentinel/master/slave), 默认每2s一次, 消息内容为
+                   sentinel_ip,sentinel_port,sentinel_runid,current_epoch,master_name,master_ip,master_port,master_config_epoch
+     */
     sentinelSendPeriodicCommands(ri);
 
     /* ============== ACTING HALF ============= */
@@ -4453,7 +4469,9 @@ void sentinelHandleDictOfRedisInstances(dict *instances) {
     di = dictGetIterator(instances);
     while((de = dictNext(di)) != NULL) {
         sentinelRedisInstance *ri = dictGetVal(de);
-
+        /*
+         
+         */
         sentinelHandleRedisInstance(ri);
         if (ri->flags & SRI_MASTER) {
             sentinelHandleDictOfRedisInstances(ri->slaves);
@@ -4499,8 +4517,14 @@ void sentinelCheckTiltCondition(void) {
     sentinel.previous_time = mstime();
 }
 
+
+/*
+ * 在serverCron中每次迭代调度一次
+ */
 void sentinelTimer(void) {
+    // 判断是否需要进入TITL模式
     sentinelCheckTiltCondition();
+
     sentinelHandleDictOfRedisInstances(sentinel.masters);
     sentinelRunPendingScripts();
     sentinelCollectTerminatedScripts();
