@@ -4423,10 +4423,13 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     sentinelReconnectInstance(ri);
     /*
        周期性发送命令:
-       1. INFO: 对master和slave, 默认每10s一次INFO;
-       2. PING: 对所有类型节点(sentinel/master/slave), 默认每1s一次;
-       3. PUBLISH: 对所有类型节点(sentinel/master/slave), 默认每2s一次, 消息内容为
-                   sentinel_ip,sentinel_port,sentinel_runid,current_epoch,master_name,master_ip,master_port,master_config_epoch
+       1. INFO: [拓扑探测]对master和slave, 默认每10s一次INFO;
+       2. PING: [节点检活]对所有类型节点(sentinel/master/slave), 默认每1s一次;
+       3. PUBLISH: [事件发布]对所有类型节点(sentinel/master/slave), 默认每2s一次, 消息(__sentinel__:hello)内容为
+                   sentinel_ip,sentinel_port,sentinel_runid,current_epoch,master_name,master_ip,master_port,master_config_epoch.
+                   -------------------------------------------------------------------------------------------------------------
+                   PUBLISH执行点为所有节点; 一个sentinel会向其监控的master和相关的所有slave以及其他已知的sentinel发送PUBLISH.
+
      */
     sentinelSendPeriodicCommands(ri);
 
@@ -4454,7 +4457,7 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     /* Only masters */
     if (ri->flags & SRI_MASTER) {
         // 检查master是否需要标记为"客观下线"(即主要判断是否攒够了quorum).
-        // 备注: quorum仅用来检测失败, 不用于制定sentinel选主所需票数(这肯定要求sentinel中的大多数,别听网上一些文章忽悠)
+        // 备注: quorum仅用来检测失败, 不决定sentinel授权选主所需票数(虽不决定,但影响;授权所需票数=max(majority, quorum))
         sentinelCheckObjectivelyDown(ri);
         if (sentinelStartFailoverIfNeeded(ri))
             // ASK其他sentinel(响应的处理函数绑定到了sentinelReceiveIsMasterDownReply)
