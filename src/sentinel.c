@@ -4454,6 +4454,7 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     /* Only masters */
     if (ri->flags & SRI_MASTER) {
         // 检查master是否需要标记为"客观下线"(即主要判断是否攒够了quorum).
+        // 备注: quorum仅用来检测失败, 不用于制定sentinel选主所需票数(这肯定要求sentinel中的大多数,别听网上一些文章忽悠)
         sentinelCheckObjectivelyDown(ri);
         if (sentinelStartFailoverIfNeeded(ri))
             // ASK其他sentinel(响应的处理函数绑定到了sentinelReceiveIsMasterDownReply)
