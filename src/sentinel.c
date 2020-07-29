@@ -4440,7 +4440,10 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
         sentinelEvent(LL_WARNING,"-tilt",NULL,"#tilt mode exited");
     }
 
-    /* Every kind of instance */
+    /* Every kind of instance 
+     * 检查给定实例是否需要标记为"主观下线".
+     * 无论主从,都要进行这步检查
+     */
     sentinelCheckSubjectivelyDown(ri);
 
     /* Masters and slaves */
@@ -4450,9 +4453,12 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
 
     /* Only masters */
     if (ri->flags & SRI_MASTER) {
+        // 检查master是否需要标记为"客观下线"(即主要判断是否攒够了quorum).
         sentinelCheckObjectivelyDown(ri);
         if (sentinelStartFailoverIfNeeded(ri))
+            // ASK其他sentinel(响应的处理函数绑定到了sentinelReceiveIsMasterDownReply)
             sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_ASK_FORCED);
+        // 推进promote slave过程
         sentinelFailoverStateMachine(ri);
         sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_NO_FLAGS);
     }
@@ -4470,7 +4476,11 @@ void sentinelHandleDictOfRedisInstances(dict *instances) {
     while((de = dictNext(di)) != NULL) {
         sentinelRedisInstance *ri = dictGetVal(de);
         /*
-         
+         * 重要逻辑,职责如下:
+         * 1. 检查和该实例间是否需要执行断线重连;
+         * 2. 对该实例执行周期性命令(PING和PUBLISH,以及可选的INFO);
+         * 3. 该实例是否处于主观下线状态;
+         * 4. 针对主观下线的master, ask其他sentinel, 并判断是否攒够了quorum来标记客观下线.
          */
         sentinelHandleRedisInstance(ri);
         if (ri->flags & SRI_MASTER) {
@@ -4524,8 +4534,15 @@ void sentinelCheckTiltCondition(void) {
 void sentinelTimer(void) {
     // 判断是否需要进入TITL模式
     sentinelCheckTiltCondition();
-
+    /*
+     * 重要逻辑,职责如下:
+     * 1. sentinel和master间的断线重连;
+     * 2. 对各master执行周期性命令(INFO&PING和PUBLISH);
+     * 3. 节点(master&slave)是否处于主观下线状态;
+     * 4. 针对主观下线的master, ask其他sentinel, 并判断是否攒够了quorum来标记客观下线.
+     */
     sentinelHandleDictOfRedisInstances(sentinel.masters);
+    // scripts(其作用待确定)
     sentinelRunPendingScripts();
     sentinelCollectTerminatedScripts();
     sentinelKillTimedoutScripts();
