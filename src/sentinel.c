@@ -2688,7 +2688,7 @@ void sentinelSendPeriodicCommands(sentinelRedisInstance *ri) {
     {
         info_period = 1000;
     } else {
-        // SENTINEL_INFO_PERIODÊÇ10s
+        // SENTINEL_INFO_PERIODæ˜¯10s
         info_period = SENTINEL_INFO_PERIOD;
     }
 
@@ -2696,7 +2696,7 @@ void sentinelSendPeriodicCommands(sentinelRedisInstance *ri) {
      * the configured 'down-after-milliseconds' time, but every second
      * anyway if 'down-after-milliseconds' is greater than 1 second. */
     ping_period = ri->down_after_period;
-    // SENTINEL_PING_PERIODÊÇ1s
+    // SENTINEL_PING_PERIODæ˜¯1s
     if (ping_period > SENTINEL_PING_PERIOD) ping_period = SENTINEL_PING_PERIOD;
 
     /* Send INFO to masters and slaves, not sentinels. */
@@ -2717,7 +2717,7 @@ void sentinelSendPeriodicCommands(sentinelRedisInstance *ri) {
     }
 
     /* PUBLISH hello messages to all the three kinds of instances. 
-       Ã¿2s
+       æ¯2s
      */
     if ((now - ri->last_pub_time) > SENTINEL_PUBLISH_PERIOD) {
         sentinelSendHello(ri);
@@ -4416,19 +4416,19 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     /* ========== MONITORING HALF ============ */
     /* Every kind of instance */
     /*
-       ¶ÏÏßÖØÁ¬:
-       1. ºÍmaster»òslaveÖ®¼ä:2ÌõÁ¬½Ó, ·Ö±ğÎªcommandÁ¬½ÓºÍpubsubÁ¬½Ó(ÏûÏ¢Á¬½Ó), ¶ÏÒ»¸ö¾ÍËã¶ÏÏß;
-       2. ºÍÆäËûsentinelÖ®¼ä:Ö»ÓĞÒ»¸öcommandÁ¬½Ó
+       æ–­çº¿é‡è¿:
+       1. å’Œmasteræˆ–slaveä¹‹é—´:2æ¡è¿æ¥, åˆ†åˆ«ä¸ºcommandè¿æ¥å’Œpubsubè¿æ¥(æ¶ˆæ¯è¿æ¥), æ–­ä¸€ä¸ªå°±ç®—æ–­çº¿;
+       2. å’Œå…¶ä»–sentinelä¹‹é—´:åªæœ‰ä¸€ä¸ªcommandè¿æ¥
      */
     sentinelReconnectInstance(ri);
     /*
-       ÖÜÆÚĞÔ·¢ËÍÃüÁî:
-       1. INFO: [ÍØÆËÌ½²â]¶ÔmasterºÍslave, Ä¬ÈÏÃ¿10sÒ»´ÎINFO;
-       2. PING: [½Úµã¼ì»î]¶ÔËùÓĞÀàĞÍ½Úµã(sentinel/master/slave), Ä¬ÈÏÃ¿1sÒ»´Î;
-       3. PUBLISH: [ÊÂ¼ş·¢²¼]¶ÔËùÓĞÀàĞÍ½Úµã(sentinel/master/slave), Ä¬ÈÏÃ¿2sÒ»´Î, ÏûÏ¢(__sentinel__:hello)ÄÚÈİÎª
+       å‘¨æœŸæ€§å‘é€å‘½ä»¤:
+       1. INFO: [æ‹“æ‰‘æ¢æµ‹]å¯¹masterå’Œslave, é»˜è®¤æ¯10sä¸€æ¬¡INFO;
+       2. PING: [èŠ‚ç‚¹æ£€æ´»]å¯¹æ‰€æœ‰ç±»å‹èŠ‚ç‚¹(sentinel/master/slave), é»˜è®¤æ¯1sä¸€æ¬¡;
+       3. PUBLISH: [äº‹ä»¶å‘å¸ƒ]å¯¹æ‰€æœ‰ç±»å‹èŠ‚ç‚¹(sentinel/master/slave), é»˜è®¤æ¯2sä¸€æ¬¡, æ¶ˆæ¯(__sentinel__:hello)å†…å®¹ä¸º
                    sentinel_ip,sentinel_port,sentinel_runid,current_epoch,master_name,master_ip,master_port,master_config_epoch.
                    -------------------------------------------------------------------------------------------------------------
-                   PUBLISHÖ´ĞĞµãÎªËùÓĞ½Úµã; Ò»¸ösentinel»áÏòÆä¼à¿ØµÄmasterºÍÏà¹ØµÄËùÓĞslaveÒÔ¼°ÆäËûÒÑÖªµÄsentinel·¢ËÍPUBLISH.
+                   PUBLISHæ‰§è¡Œç‚¹ä¸ºæ‰€æœ‰èŠ‚ç‚¹; ä¸€ä¸ªsentinelä¼šå‘å…¶ç›‘æ§çš„masterå’Œç›¸å…³çš„æ‰€æœ‰slaveä»¥åŠå…¶ä»–å·²çŸ¥çš„sentinelå‘é€PUBLISH.
 
      */
     sentinelSendPeriodicCommands(ri);
@@ -4444,8 +4444,8 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
     }
 
     /* Every kind of instance 
-     * ¼ì²é¸ø¶¨ÊµÀıÊÇ·ñĞèÒª±ê¼ÇÎª"Ö÷¹ÛÏÂÏß".
-     * ÎŞÂÛÖ÷´Ó,¶¼Òª½øĞĞÕâ²½¼ì²é
+     * æ£€æŸ¥ç»™å®šå®ä¾‹æ˜¯å¦éœ€è¦æ ‡è®°ä¸º"ä¸»è§‚ä¸‹çº¿".
+     * æ— è®ºä¸»ä»,éƒ½è¦è¿›è¡Œè¿™æ­¥æ£€æŸ¥
      */
     sentinelCheckSubjectivelyDown(ri);
 
@@ -4456,13 +4456,13 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
 
     /* Only masters */
     if (ri->flags & SRI_MASTER) {
-        // ¼ì²émasterÊÇ·ñĞèÒª±ê¼ÇÎª"¿Í¹ÛÏÂÏß"(¼´Ö÷ÒªÅĞ¶ÏÊÇ·ñÔÜ¹»ÁËquorum).
-        // ±¸×¢: quorum½öÓÃÀ´¼ì²âÊ§°Ü, ²»¾ö¶¨sentinelÊÚÈ¨Ñ¡Ö÷ËùĞèÆ±Êı(Ëä²»¾ö¶¨,µ«Ó°Ïì;ÊÚÈ¨ËùĞèÆ±Êı=max(majority, quorum))
+        // æ£€æŸ¥masteræ˜¯å¦éœ€è¦æ ‡è®°ä¸º"å®¢è§‚ä¸‹çº¿"(å³ä¸»è¦åˆ¤æ–­æ˜¯å¦æ”’å¤Ÿäº†quorum).
+        // å¤‡æ³¨: quorumä»…ç”¨æ¥æ£€æµ‹å¤±è´¥, ä¸å†³å®šsentinelæˆæƒé€‰ä¸»æ‰€éœ€ç¥¨æ•°(è™½ä¸å†³å®š,ä½†å½±å“;æˆæƒæ‰€éœ€ç¥¨æ•°=max(majority, quorum))
         sentinelCheckObjectivelyDown(ri);
         if (sentinelStartFailoverIfNeeded(ri))
-            // ASKÆäËûsentinel¸ÃmasterÊÇ·ñ´¦ÓÚÏÂÏß×´Ì¬(ÏìÓ¦µÄ´¦Àíº¯Êı°ó¶¨µ½ÁËsentinelReceiveIsMasterDownReply)
+            // ASKå…¶ä»–sentinelè¯¥masteræ˜¯å¦å¤„äºä¸‹çº¿çŠ¶æ€(å“åº”çš„å¤„ç†å‡½æ•°ç»‘å®šåˆ°äº†sentinelReceiveIsMasterDownReply)
             sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_ASK_FORCED);
-        // ÍÆ½øpromote slave¹ı³Ì
+        // æ¨è¿›promote slaveè¿‡ç¨‹
         sentinelFailoverStateMachine(ri);
         sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_NO_FLAGS);
     }
@@ -4480,11 +4480,11 @@ void sentinelHandleDictOfRedisInstances(dict *instances) {
     while((de = dictNext(di)) != NULL) {
         sentinelRedisInstance *ri = dictGetVal(de);
         /*
-         * ÖØÒªÂß¼­,Ö°ÔğÈçÏÂ:
-         * 1. ¼ì²éºÍ¸ÃÊµÀı¼äÊÇ·ñĞèÒªÖ´ĞĞ¶ÏÏßÖØÁ¬;
-         * 2. ¶Ô¸ÃÊµÀıÖ´ĞĞÖÜÆÚĞÔÃüÁî(PINGºÍPUBLISH,ÒÔ¼°¿ÉÑ¡µÄINFO);
-         * 3. ¸ÃÊµÀıÊÇ·ñ´¦ÓÚÖ÷¹ÛÏÂÏß×´Ì¬;
-         * 4. Õë¶ÔÖ÷¹ÛÏÂÏßµÄmaster, askÆäËûsentinel, ²¢ÅĞ¶ÏÊÇ·ñÔÜ¹»ÁËquorumÀ´±ê¼Ç¿Í¹ÛÏÂÏß.
+         * é‡è¦é€»è¾‘,èŒè´£å¦‚ä¸‹:
+         * 1. æ£€æŸ¥å’Œè¯¥å®ä¾‹é—´æ˜¯å¦éœ€è¦æ‰§è¡Œæ–­çº¿é‡è¿;
+         * 2. å¯¹è¯¥å®ä¾‹æ‰§è¡Œå‘¨æœŸæ€§å‘½ä»¤(PINGå’ŒPUBLISH,ä»¥åŠå¯é€‰çš„INFO);
+         * 3. è¯¥å®ä¾‹æ˜¯å¦å¤„äºä¸»è§‚ä¸‹çº¿çŠ¶æ€;
+         * 4. é’ˆå¯¹ä¸»è§‚ä¸‹çº¿çš„master, askå…¶ä»–sentinel, å¹¶åˆ¤æ–­æ˜¯å¦æ”’å¤Ÿäº†quorumæ¥æ ‡è®°å®¢è§‚ä¸‹çº¿.
          */
         sentinelHandleRedisInstance(ri);
         if (ri->flags & SRI_MASTER) {
@@ -4533,34 +4533,40 @@ void sentinelCheckTiltCondition(void) {
 
 
 /*
- * ÔÚserverCronÖĞÃ¿´Îµü´úµ÷¶ÈÒ»´Î.
+ * åœ¨serverCronä¸­æ¯æ¬¡è¿­ä»£è°ƒåº¦ä¸€æ¬¡.
  * 
- * ÔÚÕâÊáÀíÒ»ÏÂsentinel´óÖÂÉè¼Æ.
- * sentinelºÍËùÓĞ½Úµã¼ä(master/slave/sentinel)¶¼»á½¨Á¢Á½ÌõÁ¬½Ó:"ÃüÁîÁ¬½Ó"ºÍ"ÏûÏ¢Á¬½Ó".
- * ÃüÁîÁ¬½ÓÉÏ»á¶¨Ê±·¢ËÍPINGÃüÁîÒÔÊµÏÖ¼ì»î(Ä¬ÈÏÃ¿Ãë1´Î).
- * Óëmaster & slave¼äµÄÃüÁîÁ¬½Ó»¹ÓĞÁíÒ»¸öÖ°Ôğ:ÍØÆËÌ½²â(Ã¿10s·¢ËÍINFOÃüÁîÒÔ»ñµÃÖ÷´Ó½á¹¹).
- * ¸ÃÖ°ÔğÒ²Ê¹µÃsentinel²»ĞèÒªÅäÖÃÖ÷´Ó½á¹¹¼´¿ÉÉÏÏßÊ¹ÓÃ.
+ * åœ¨è¿™æ¢³ç†ä¸€ä¸‹sentinelå¤§è‡´è®¾è®¡.
  *
- * ÏûÏ¢Á¬½ÓÉÏ»á·¢²¼Ò»Ğ©ÊÂ¼şĞÅÏ¢,ÊÂ¼şÁĞ±í¿É²Î¿¼https://redis.io/topics/sentinel#pubsub-messages.
- * ³ıÁËÕâÀïÁĞ¾ÙµÄÁĞ±íÍâ,»¹´æÔÚÒ»¸öÖØÒªÊÂ¼ş:hello. Æä¶ÔÓ¦µÄchannelÎª__sentinel__:hello.
- * sentinel»á¶¨Ê±ÔÚ¸ÃchannelÉÏ¹ã²¥×Ô¼ºµÄ´æÔÚ(Ä¬ÈÏÃ¿2s), ÕâÊ¹µÃsentinelÖ®¼ä¿É×Ô¶¯Ïà»¥·¢ÏÖ,
- * Ò²ÊÇsentinel"ÁãÅäÖÃÉÏÏß"µÄ»ù´¡Ìõ¼şÖ®Ò».
+ * sentinelå’Œæ‰€æœ‰èŠ‚ç‚¹é—´(master/slave/sentinel)éƒ½ä¼šå»ºç«‹ä¸¤æ¡è¿æ¥:"å‘½ä»¤è¿æ¥"å’Œ"æ¶ˆæ¯è¿æ¥".
+ * å‘½ä»¤è¿æ¥ä¸Šä¼šå®šæ—¶å‘é€PINGå‘½ä»¤ä»¥å®ç°æ£€æ´»(é»˜è®¤æ¯ç§’1æ¬¡).
+ * ä¸master & slaveé—´çš„å‘½ä»¤è¿æ¥è¿˜æœ‰å¦ä¸€ä¸ªèŒè´£:æ‹“æ‰‘æ¢æµ‹(æ¯10så‘é€INFOå‘½ä»¤ä»¥è·å¾—ä¸»ä»ç»“æ„).
+ * è¯¥èŒè´£ä¹Ÿä½¿å¾—sentinelä¸éœ€è¦é…ç½®ä¸»ä»ç»“æ„å³å¯ä¸Šçº¿ä½¿ç”¨.
  *
- * Ç¿µ÷:Í¬Ò»¸öÊÂ¼ş,»áÔÚËùÓĞ½ÚµãÉÏ¶¼PUBLISHÒ»±é.
+ * æ¶ˆæ¯è¿æ¥ä¸Šä¼šå‘å¸ƒä¸€äº›äº‹ä»¶ä¿¡æ¯,äº‹ä»¶åˆ—è¡¨å¯å‚è€ƒhttps://redis.io/topics/sentinel#pubsub-messages.
+ * é™¤äº†è¿™é‡Œåˆ—ä¸¾çš„åˆ—è¡¨å¤–,è¿˜å­˜åœ¨ä¸€ä¸ªé‡è¦äº‹ä»¶:hello. å…¶å¯¹åº”çš„channelä¸º__sentinel__:hello.
+ * sentinelä¼šå®šæ—¶åœ¨è¯¥channelä¸Šå¹¿æ’­è‡ªå·±çš„å­˜åœ¨(é»˜è®¤æ¯2s), è¿™ä½¿å¾—sentinelä¹‹é—´å¯è‡ªåŠ¨ç›¸äº’å‘ç°,
+ * ä¹Ÿæ˜¯sentinel"é›¶é…ç½®ä¸Šçº¿"çš„åŸºç¡€æ¡ä»¶ä¹‹ä¸€.
+ * å¼ºè°ƒ:åŒä¸€ä¸ªäº‹ä»¶,ä¼šåœ¨æ‰€æœ‰èŠ‚ç‚¹ä¸Šéƒ½PUBLISHä¸€é.
  * 
+ * è‹¥sentinelåœ¨è®¾å®šæ—¶é—´å†…æœªæ”¶åˆ°masterçš„PONG,åˆ™å°†è¯¥masteræ ‡è®°ä¸º"ä¸»è§‚ä¸‹çº¿"(S_DWON)çŠ¶æ€.
+ * ç„¶åå‘å…¶ä»–sentinelå‘é€"sentinel is-master-down-by-addr <master_ip> <master_port> <current_epoch> <sentinel_runid or *>"
+ * æ¥askæ˜¯å¦åŒæ ·è®¤ä¸ºè¯¥master"ä¸»è§‚ä¸‹çº¿".
+ * è‹¥åŒ…æ‹¬è‡ªå·±åœ¨å†…æœ‰quorumä¸ªsentinelåŒæ„,åˆ™æ ‡è®°è¯¥masterä¸º"å®¢è§‚ä¸‹çº¿"(O_DWON)çŠ¶æ€,éšåå‘èµ·å¤±è´¥æ¢å¤çš„æˆæƒæŠ•ç¥¨.
+ * è¯·æ±‚æŠ•ç¥¨å¯¹åº”çš„channelæ˜¯"+try-failover",æ”¶é›†é€‰ç¥¨å¯¹åº”çš„channelæ˜¯"+elected-leader".
+ * æ‹¿åˆ°max(quorum, majority)ç¥¨æ•°çš„sentinelçœŸæ­£æ‰§è¡Œå¤±è´¥æ¢å¤(å³promote slave)åŠ¨ä½œ.
  */
 void sentinelTimer(void) {
-    // ÅĞ¶ÏÊÇ·ñĞèÒª½øÈëTITLÄ£Ê½
+    // åˆ¤æ–­æ˜¯å¦éœ€è¦è¿›å…¥TITLæ¨¡å¼
     sentinelCheckTiltCondition();
     /*
-     * ÖØÒªÂß¼­,Ö°ÔğÈçÏÂ:
-     * 1. sentinelºÍmaster¼äµÄ¶ÏÏßÖØÁ¬;
-     * 2. ¶Ô¸÷masterÖ´ĞĞÖÜÆÚĞÔÃüÁî(INFO&PINGºÍPUBLISH);
-     * 3. ½Úµã(master&slave)ÊÇ·ñ´¦ÓÚÖ÷¹ÛÏÂÏß×´Ì¬;
-     * 4. Õë¶ÔÖ÷¹ÛÏÂÏßµÄmaster, askÆäËûsentinel, ²¢ÅĞ¶ÏÊÇ·ñÔÜ¹»ÁËquorumÀ´±ê¼Ç¿Í¹ÛÏÂÏß.
+     * é‡è¦é€»è¾‘,èŒè´£å¦‚ä¸‹:
+     * 1. sentinelå’Œmasteré—´çš„æ–­çº¿é‡è¿;
+     * 2. å¯¹å„masteræ‰§è¡Œå‘¨æœŸæ€§å‘½ä»¤(INFO&PINGå’ŒPUBLISH);
+     * 3. èŠ‚ç‚¹(master&slave)æ˜¯å¦å¤„äºä¸»è§‚ä¸‹çº¿çŠ¶æ€;
+     * 4. é’ˆå¯¹ä¸»è§‚ä¸‹çº¿çš„master, askå…¶ä»–sentinel, å¹¶åˆ¤æ–­æ˜¯å¦æ”’å¤Ÿäº†quorumæ¥æ ‡è®°å®¢è§‚ä¸‹çº¿.
      */
     sentinelHandleDictOfRedisInstances(sentinel.masters);
-    // scripts(Æä×÷ÓÃ´ıÈ·¶¨)
+    // scripts(å…¶ä½œç”¨å¾…ç¡®å®š)
     sentinelRunPendingScripts();
     sentinelCollectTerminatedScripts();
     sentinelKillTimedoutScripts();
