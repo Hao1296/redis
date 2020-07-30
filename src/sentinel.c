@@ -4460,7 +4460,7 @@ void sentinelHandleRedisInstance(sentinelRedisInstance *ri) {
         // 备注: quorum仅用来检测失败, 不决定sentinel授权选主所需票数(虽不决定,但影响;授权所需票数=max(majority, quorum))
         sentinelCheckObjectivelyDown(ri);
         if (sentinelStartFailoverIfNeeded(ri))
-            // ASK其他sentinel(响应的处理函数绑定到了sentinelReceiveIsMasterDownReply)
+            // ASK其他sentinel该master是否处于下线状态(响应的处理函数绑定到了sentinelReceiveIsMasterDownReply)
             sentinelAskMasterStateToOtherSentinels(ri,SENTINEL_ASK_FORCED);
         // 推进promote slave过程
         sentinelFailoverStateMachine(ri);
@@ -4533,7 +4533,21 @@ void sentinelCheckTiltCondition(void) {
 
 
 /*
- * 在serverCron中每次迭代调度一次
+ * 在serverCron中每次迭代调度一次.
+ * 
+ * 在这梳理一下sentinel大致设计.
+ * sentinel和所有节点间(master/slave/sentinel)都会建立两条连接:"命令连接"和"消息连接".
+ * 命令连接上会定时发送PING命令以实现检活(默认每秒1次).
+ * 与master & slave间的命令连接还有另一个职责:拓扑探测(每10s发送INFO命令以获得主从结构).
+ * 该职责也使得sentinel不需要配置主从结构即可上线使用.
+ *
+ * 消息连接上会发布一些事件信息,事件列表可参考https://redis.io/topics/sentinel#pubsub-messages.
+ * 除了这里列举的列表外,还存在一个重要事件:hello. 其对应的channel为__sentinel__:hello.
+ * sentinel会定时在该channel上广播自己的存在(默认每2s), 这使得sentinel之间可自动相互发现,
+ * 也是sentinel"零配置上线"的基础条件之一.
+ *
+ * 强调:同一个事件,会在所有节点上都PUBLISH一遍.
+ * 
  */
 void sentinelTimer(void) {
     // 判断是否需要进入TITL模式
