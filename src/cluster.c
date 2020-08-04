@@ -625,6 +625,7 @@ void freeClusterLink(clusterLink *link) {
     zfree(link);
 }
 
+// 处理cluster端口的accept事件
 #define MAX_CLUSTER_ACCEPTS_PER_CALL 1000
 void clusterAcceptHandler(aeEventLoop *el, int fd, void *privdata, int mask) {
     int cport, cfd;
@@ -3478,7 +3479,9 @@ void clusterCron(void) {
      * 1) Check if there are orphaned masters (masters without non failing
      *    slaves).
      * 2) Count the max number of non failing slaves for a single master.
-     * 3) Count the number of slaves for our master, if we are a slave. */
+     * 3) Count the number of slaves for our master, if we are a slave. 
+     * 4) Check if the PONG is timeout.
+     */
     orphaned_masters = 0;
     max_slaves = 0;
     this_slaves = 0;
@@ -3530,7 +3533,7 @@ void clusterCron(void) {
          * a new ping now, to ensure all the nodes are pinged without
          * a too big delay. */
         if (node->link &&
-            node->ping_sent == 0 &&
+            node->ping_sent == 0 &&// ping_sent==0意味着不存在"无PONG之PING",而非"从未PING过"(因为每次收到PONG后会将该值清零)
             (now - node->pong_received) > server.cluster_node_timeout/2)
         {
             clusterSendPing(node->link, CLUSTERMSG_TYPE_PING);

@@ -2195,7 +2195,9 @@ void initServer(void) {
         server.maxmemory_policy = MAXMEMORY_NO_EVICTION;
     }
 
+    // 若为Cluster模式,则作相应的初始化工作
     if (server.cluster_enabled) clusterInit();
+
     replicationScriptCacheInit();
     scriptingInit(1);
     slowlogInit();
