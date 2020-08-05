@@ -115,6 +115,10 @@ typedef struct aeEventLoop {
     aeFileEvent *events; /* Registered events */
 	// 哪个fd发生了什么事件(AE_READABLE|AE_READABLE|AE_BARRIER)
     aeFiredEvent *fired; /* Fired events */
+    /*
+     * 定时时间列表表头.
+     * Redis采用"无序双向列表"组织定时事件
+     */
     aeTimeEvent *timeEventHead;
     int stop;
     void *apidata; /* This is used for polling API specific data */

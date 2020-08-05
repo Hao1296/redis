@@ -216,6 +216,7 @@ long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
     te = zmalloc(sizeof(*te));
     if (te == NULL) return AE_ERR;
     te->id = id;
+    // 将aeTimeEvent的两个时间字段设为milliseconds毫秒后
     aeAddMillisecondsToNow(milliseconds,&te->when_sec,&te->when_ms);
     te->timeProc = proc;
     te->finalizerProc = finalizerProc;
@@ -293,6 +294,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
 
     te = eventLoop->timeEventHead;
     maxId = eventLoop->timeEventNextId-1;
+    // 遍历定时事件双向链表,处理其中到期的事件
     while(te) {
         long now_sec, now_ms;
         long long id;
@@ -331,9 +333,9 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
             id = te->id;
             retval = te->timeProc(eventLoop, id, te->clientData);
             processed++;
-            if (retval != AE_NOMORE) {
+            if (retval != AE_NOMORE) {// te是定时循环任务,下次触发时间由timeProc返回值决定
                 aeAddMillisecondsToNow(retval,&te->when_sec,&te->when_ms);
-            } else {
+            } else {// te是一次性任务
                 te->id = AE_DELETED_EVENT_ID;
             }
         }
@@ -372,7 +374,12 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         int j;
         aeTimeEvent *shortest = NULL;
         struct timeval tv, *tvp;
-
+        /* 选出最近将要触发的定时事件
+         * 因为这里检索shortest的目的不是要处理定时事件,
+         * 而是为了确定在接下来的aeApiPoll中最长能等待多长事件
+         * 所以要求flag内不包含AE_DONT_WAIT.
+         * (真正处理定时事件的逻辑在本函数的最后一步:processTimeEvents)
+         */
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
             shortest = aeSearchNearestTimer(eventLoop);
         if (shortest) {
@@ -394,7 +401,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
                 tvp->tv_sec = 0;
                 tvp->tv_usec = 0;
             }
-        } else {
+        } else { // 说明无定时事件或不需要关注
             /* If we have to check for events but need to return
              * ASAP because of AE_DONT_WAIT we need to set the timeout
              * to zero */
