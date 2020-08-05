@@ -440,6 +440,9 @@ void clusterUpdateMyselfFlags(void) {
     }
 }
 
+/*
+ * 执行集群初始化逻辑,在initServer中会被调用
+ */
 void clusterInit(void) {
     int saveconf = 0;
 
