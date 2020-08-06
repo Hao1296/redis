@@ -1672,7 +1672,7 @@ int clusterProcessPacket(clusterLink *link) {
     uint16_t flags = ntohs(hdr->flags);
     uint64_t senderCurrentEpoch = 0, senderConfigEpoch = 0;
     clusterNode *sender;
-
+    // 数据包长度校验
     if (type == CLUSTERMSG_TYPE_PING || type == CLUSTERMSG_TYPE_PONG ||
         type == CLUSTERMSG_TYPE_MEET)
     {
@@ -3110,7 +3110,7 @@ void clusterHandleSlaveFailover(void) {
         return; /* Wait for replies. */
     }
 
-    /* Check if we reached the quorum. */
+    /* Check if we reached the quorum. 需要大多数master的投票*/
     if (server.cluster->failover_auth_count >= needed_quorum) {
         /* We have the quorum, we can finally failover the master. */
 
