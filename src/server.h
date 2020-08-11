@@ -841,7 +841,7 @@ typedef struct zskiplistNode {
     } level[];
 } zskiplistNode;
 
-typedef struct zskiplist {
+typedef struct zskiplist {// 跳表的相关操作见t_zset.c
 	// header指向特殊的头节点，而非第一个数据节点
 	// 头节点高度为64，score=0
 	// 但tail指向最后一个数据节点

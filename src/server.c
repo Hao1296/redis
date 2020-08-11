@@ -1104,6 +1104,13 @@ void updateCachedTime(int update_daylight_info) {
  * Everything directly called here will be called server.hz times per second,
  * so in order to throttle execution of things we want to do less frequently
  * a macro is used: run_with_period(milliseconds) { .... }
+ * 
+ * serverCron默认每秒被调用server.hz次.
+ * 虽然该事件事件初始化时是
+ * aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL)
+ * 时间设为了1ms.
+ * 但这1ms只是初始delay,后面的调用时间由serverCron的返回值决定,
+ * 即1000/server.hz.
  */
 
 int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
@@ -1225,7 +1232,10 @@ int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData) {
     /* We need to do a few operations on clients asynchronously. */
     clientsCron();
 
-    /* Handle background operations on Redis databases. */
+    /* Handle background operations on Redis databases. 
+     *
+     * 包括数据自动过期,rehashing,resizing等重要操作.
+     */
     databasesCron();
 
     /* Start a scheduled AOF rewrite if this was requested by the user while

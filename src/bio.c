@@ -142,6 +142,10 @@ void bioCreateBackgroundJob(int type, void *arg1, void *arg2, void *arg3) {
     pthread_mutex_unlock(&bio_mutex[type]);
 }
 
+/*
+ * bio线程的业务循环.
+ * arg为当前bio线程所关注的job的type
+ */
 void *bioProcessBackgroundJobs(void *arg) {
     struct bio_job *job;
     unsigned long type = (unsigned long) arg;
