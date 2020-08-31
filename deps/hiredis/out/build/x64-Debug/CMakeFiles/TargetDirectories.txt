@@ -1,0 +1,6 @@
+E:/programming/redis/redis/deps/hiredis/out/build/x64-Debug/CMakeFiles/hiredis.dir
+E:/programming/redis/redis/deps/hiredis/out/build/x64-Debug/CMakeFiles/install/local.dir
+E:/programming/redis/redis/deps/hiredis/out/build/x64-Debug/CMakeFiles/install.dir
+E:/programming/redis/redis/deps/hiredis/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+E:/programming/redis/redis/deps/hiredis/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir
+E:/programming/redis/redis/deps/hiredis/out/build/x64-Debug/CMakeFiles/list_install_components.dir

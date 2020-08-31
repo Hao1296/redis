@@ -654,7 +654,9 @@ typedef struct redisDb {
     dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP) (其中key为阻塞中的列表key, robj类型;value为client列表,listNode*类型)*/
     dict *ready_keys;           /* Blocked keys that received a PUSH (其中key为阻塞中的列表key, robj类型;value为client列表,listNode*类型)*/
     /* WATCHED keys for MULTI/EXEC CAS 
-     *  每次执行写命令后都会执行touchWatchedKey函数来处理watch相关逻辑;
+     *
+     * dict中的key是被watch的key, value是watch该key的client组成的列表
+     * 每次执行写命令后都会执行touchWatchedKey函数来处理watch相关逻辑;
      */
     dict *watched_keys;         
     int id;                     /* Database ID */
